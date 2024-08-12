@@ -1,22 +1,21 @@
+import React, { useState, useEffect } from "react";
 import {
   Image,
   StyleSheet,
-  Platform,
   Text,
   View,
-  Alert,
   ScrollView,
+  TouchableOpacity,
 } from "react-native";
-import React, { useState, useEffect } from "react";
-
-import { HelloWave } from "@/components/HelloWave";
-import ParallaxScrollView from "@/components/ParallaxScrollView";
-import { ThemedText } from "@/components/ThemedText";
-import { ThemedView } from "@/components/ThemedView";
-import TabTwoScreen from "@/app/(tabs)/explore"
+import { useNavigation } from "@react-navigation/native";
+import Details from "@/app/Details";
 
 export default function HomeScreen() {
   const [fetchedData, setFetchedData] = useState(null);
+  const navigation = useNavigation();
+  const [currentScreen, setCurrentScreen] = useState("home");
+  const [selectedItem, setSelectedItem] = useState(null);
+
   const options = {
     method: "GET",
     headers: {
@@ -33,29 +32,53 @@ export default function HomeScreen() {
     )
       .then((response) => response.json())
       .then((data) => {
-        setFetchedData(data);
+        setFetchedData(data.results);
       })
       .catch((err) => console.error(err));
   }, []);
 
+  const handlePress = (item) => {
+    setSelectedItem(item);
+    setCurrentScreen("details");
+  };
+
+  const navigateBack = () => {
+    setCurrentScreen("home");
+  };
+
+  if (currentScreen === "details" && selectedItem) {
+    return (
+      <Details
+        title={selectedItem.title}
+        uri={`https://image.tmdb.org/t/p/original/${selectedItem.poster_path}`}
+        overview={selectedItem.overview}
+        popularity={selectedItem.popularity}
+        vote_average={selectedItem.vote_average}
+        navigateBack={navigateBack}
+      />
+    );
+  }
+
   return (
     <View style={styles.container}>
-      <Text>Movies</Text>
+      <Text style={styles.header}>Movies</Text>
       {fetchedData && (
-        <ScrollView>
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
           {fetchedData.map((item, index) => (
-            <View key={index} style={styles.card}>
-              <Image source={{ uri: item.imageUrl }} style={styles.cardImage} />
-              <Text>First Name: {item.firstName}</Text>
-            </View>
-          ))
-          <TabTwoScreen title={item.title}
-          uri={item.uri}
-          overview={item.overview}
-          popularity={item.popularity}
-          vote_average={item.vote_average}
-          />}
-          
+            <TouchableOpacity
+              key={index}
+              style={styles.card}
+              onPress={() => handlePress(item)}
+            >
+              <Image
+                source={{
+                  uri: `https://image.tmdb.org/t/p/original/${item.poster_path}`,
+                }}
+                style={styles.cardImage}
+              />
+              <Text style={styles.cardTitle}>{item.title}</Text>
+            </TouchableOpacity>
+          ))}
         </ScrollView>
       )}
     </View>
@@ -65,20 +88,38 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    padding: 16,
+    backgroundColor: "#fff",
+  },
+  header: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  scrollContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
   },
   card: {
-    width: "100%",
+    width: "48%",
     borderWidth: 1,
-    borderColor: "#495057",
+    borderColor: "#ddd",
     borderRadius: 8,
-    padding: 16,
+    padding: 8,
     marginBottom: 16,
-    backgroundColor: "#495057",
+    backgroundColor: "#f8f9fa",
   },
   cardImage: {
     width: "100%",
-    height: 200,
-    marginBottom: 8,
+    height: 150,
     borderRadius: 8,
+    marginBottom: 8,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    textAlign: "center",
   },
 });

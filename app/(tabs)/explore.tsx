@@ -1,52 +1,124 @@
-import Ionicons from "@expo/vector-icons/Ionicons";
-import { StyleSheet, Image, Platform, View, Text, Button } from "react-native";
+import React, { useState, useEffect } from "react";
+import {
+  Image,
+  StyleSheet,
+  Text,
+  View,
+  ScrollView,
+  TouchableOpacity,
+} from "react-native";
+import Details from "@/app/Details";
 
-import { Collapsible } from "@/components/Collapsible";
-import { ExternalLink } from "@/components/ExternalLink";
-import ParallaxScrollView from "@/components/ParallaxScrollView";
-import { ThemedText } from "@/components/ThemedText";
-import { ThemedView } from "@/components/ThemedView";
+export default function HomeScreen() {
+  const [fetchedData, setFetchedData] = useState(null);
+  const [currentScreen, setCurrentScreen] = useState("shome");
+  const [selectedItem, setSelectedItem] = useState(null);
 
-export default function TabTwoScreen({
-  title,
-  uri,
-  overview,
-  popularity,
-  vote_average,
-}) {
+  const options = {
+    method: "GET",
+    headers: {
+      accept: "application/json",
+      Authorization:
+        "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIwYTNmMGRmMDRlMWE3MTBiZmYyNDE0YjJjNjk5ZGI5NSIsInN1YiI6IjY0ZmJmYzc4ZWZlYTdhMDBmZDE5NGQ1OCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.vjITkPseRhTMClOK1gPcW1AfAK7LGcbDQXbuv-n0FO8",
+    },
+  };
+
+  useEffect(() => {
+    fetch(
+      "https://api.themoviedb.org/3/discover/tv?include_adult=false&include_null_first_air_dates=false&language=en-US&page=1&sort_by=popularity.desc",
+      options
+    )
+      .then((response) => response.json())
+      .then((data) => {
+        setFetchedData(data.results);
+      })
+      .catch((err) => console.error(err));
+  }, []);
+
+  const handlePress = (item) => {
+    setSelectedItem(item);
+    setCurrentScreen("details");
+  };
+
+  const navigateBack = () => {
+    setCurrentScreen("shome");
+    setSelectedItem(null);
+  };
+
+  if (currentScreen === "details" && selectedItem) {
+    return (
+      <Details
+        title={selectedItem.title}
+        uri={`https://image.tmdb.org/t/p/original/${selectedItem.poster_path}`}
+        overview={selectedItem.overview}
+        popularity={selectedItem.popularity}
+        vote_average={selectedItem.vote_average}
+        navigateBack={navigateBack}
+      />
+    );
+  }
+
   return (
-    <View>
-      <Text>TV Shows</Text>
-      <View>
-        <Image source={{ uri: uri }} />
-
-        <Text>{title}</Text>
-        <View>
-          {" "}
-          <Text>{vote_average}</Text>
-          <Text>{popularity}</Text>
-        </View>
-      </View>
-
-      <View>
-        <Text>Overview</Text>
-        <Text>{overview}</Text>
-      </View>
-
-      <Button>Discover</Button>
+    <View style={styles.container}>
+      <Text style={styles.header}>TV Shows</Text>
+      {fetchedData && (
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          {fetchedData.map((item, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.card}
+              onPress={() => handlePress(item)}
+            >
+              <Image
+                source={{
+                  uri: `https://image.tmdb.org/t/p/original/${item.poster_path}`,
+                }}
+                style={styles.cardImage}
+              />
+              <Text style={styles.cardTitle}>{item.original_name}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
-    color: "#808080",
-    bottom: -90,
-    left: -35,
-    position: "absolute",
+  container: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: "#fff",
   },
-  titleContainer: {
+  header: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  scrollContainer: {
     flexDirection: "row",
-    gap: 8,
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+  card: {
+    width: "48%",
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    padding: 8,
+    marginBottom: 16,
+    backgroundColor: "#f8f9fa",
+  },
+  cardImage: {
+    width: "100%",
+    height: 150,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    textAlign: "center",
   },
 });
